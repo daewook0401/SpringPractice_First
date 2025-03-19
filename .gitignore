@@ -31,4 +31,4 @@ tmp/
 *.war
 # 압축파일들
 
-mybatis-config.xml
+*/mybatis-config.xml

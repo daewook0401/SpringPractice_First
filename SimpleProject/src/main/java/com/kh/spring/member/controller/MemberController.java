@@ -1,19 +1,47 @@
 package com.kh.spring.member.controller;
 
-import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
 
 import com.kh.spring.member.model.dto.MemberDTO;
+import com.kh.spring.member.model.service.MemberService;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Controller
+@RequiredArgsConstructor // 의존성주입 생성자를 생성해주는 애노테이션
 public class MemberController {
+	
+	
+	@Autowired
+	private final MemberService memberService;
+	
+	/*
+	@Autowired
+	public void setMemberService(MemberService memberService) {
+		this.memberService = memberService;
+	}
+	*/
+	
+	/*
+	@Autowired // 컨스트럭터 인젝션
+	public MemberController(MemberService memberService) {
+		this.memberService = memberService;
+	}
+	*/
 	
 	/*
 	@RequestMapping(value="login")
@@ -60,11 +88,86 @@ public class MemberController {
 	 * setter메서드를 찾아서 요청 시 전달값을 해당 필드에 대입해줌
 	 * (Setter Injection)
 	 */
+	
+	/*
 	@PostMapping("login")
-	public String login(MemberDTO member) {
+	public String login(MemberDTO member, 
+						HttpSession session,
+						Model model) {
 		
-		log.info("{}", member);
+		// log.info("{}", member);
+		MemberDTO loginMember = memberService.login(member);
+//	
+//		if(loginMember != null) {
+//			log.info("성공");
+//		} else {
+//			log.info("실패");
+//		}
+		if(loginMember != null) { // 성공했을 때
+			session.setAttribute("loginMember", loginMember);
+			// 그 다음에
+			// main_page
+			// sendRedirect
+			
+			// localhost/spring/
+			//
+			return "redirect:/";
+		} else { // 실패했을 때
+			// Model 객체를 사용해서 request 사용(데이터 담음)
+			// error_page
+			// Spring에서는 Model객체를 이용해서 RequestScope에 값을 담음
+			model.addAttribute("message","로그인 실패");
+			
+			// forwarding
+			// /WEB-INF/views/
+			// include/error_page
+			// .jsp
+			return "include/error_page";
+		}
+	} 
+	*/
+	
+	@PostMapping("login")
+	public ModelAndView login(MemberDTO member, 
+							  HttpSession session,
+							  ModelAndView mv) {
 		
+		MemberDTO loginMember = memberService.login(member);
+		
+		if(loginMember != null) {
+			session.setAttribute("loginMember", loginMember);
+			mv.setViewName("redirect:/");
+		} else {
+			mv.addObject("message", "로그인 실패")
+			  .setViewName("include/error_page");
+		}
+		return mv;
+	}
+	
+	@GetMapping("logout")
+	public ModelAndView join(HttpSession session, ModelAndView mv) {
+		session.removeAttribute("loginMember");
+		mv.setViewName("redirect:/");
+	
+		return mv;
+	}
+	
+	@GetMapping("signup-form")
+	public String signupForm() {
+		// /WEB-INF/views/member/signup-form   .jsp
+		return "member/signup-form";
+	}
+	
+	
+	/**
+	 * @param member id
+	 * 
+	 * @return 성공 시 main, 실패하면 err담아서 errpage로 
+	 */
+	@PostMapping("signup")
+	public String join(MemberDTO member, HttpServletRequest request) {
+		
+		memberService.signUp(member);
 		return "main_page";
 	}
 }
